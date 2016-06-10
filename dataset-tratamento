@@ -1,0 +1,44 @@
+							*******************************************
+							*			Campos Originais			  *
+					        *******************************************
+
+Item:
+- itemID - Número inteiro de grandes proporções que representa o identificador do anúncio.
+- categoryID - Número inteiro de grandes proporções que representa o identificador da categoria do produto anunciado.
+- title - String com caracteres de linguas eslavas, representando o título do anúncio.
+- description - String com caracteres em linguas eslavas, representando a descricao do produto anunciado.
+- images_array - Array com os ids das imagens referentes a este anuncio.
+- attrsJSON - Json com atributos do anuncio.
+- price - Double com o preço do produto.
+- locationID - Id do local de onde o anúncio foi feito.
+- metroID - Id de alguma tabela não identificada.
+- lat - Double com a latitude do endereço? 
+- lon - Double com a longitude do endereço?
+
+Location:
+- locationID - Id do local.
+- regionID	- Id da região à qual aquele local pertence.
+
+ItemPairs:
+- ItemID_1 - Id do item 1 da comparação.
+- ItemID_2 - Id do item 2 da comparação.
+- isDuplicate - Se o par de treino é duplicado ou não (Variavel Objetivo).
+- generationMethod - Método usado para obter a informação sobre a duplicidade do par.
+
+Category:
+- categoryID - Id da categoria assinalada para o produto anunciado.
+- parentCategoryID - Id da categoria pai da categoria assinalada para o produto.
+
+
+							*******************************************
+							*			Lista de Features			  *
+					        *******************************************
+
+Dados Tratados:
+- mesmaCategoria - Booleano que diz se ambos os itens do mesmo par tem a mesma categoria.
+- mesmaCategoriaPai - Booleano que diz se ambos os itens do mesmo par tem a mesma categoria.
+- mesmoLocal - Booleano que diz se ambos os itens do par tem o mesmo locationID.
+- mesmaRegiao - Booleano que diz se ambos os itens do par posuem o mesmo ID de regiao.
+- diferencaLatitude - Double com a diferença entre as latitudes dos itens.
+- diferencaLongitude - Double com a diferença entre as longitudes dos itens.
+- 
