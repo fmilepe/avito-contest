@@ -1,0 +1,5 @@
+db.pair.createIndex({'itemID_1':1});
+db.item.createIndex({'itemID':1},{unique:true});
+db.item.createIndex( { 'itemID': "hashed" } );
+db.pair_item.createIndex({'row_number':1});
+db.item_test.createIndex({'itemID':1},{unique:true});
