@@ -204,27 +204,28 @@ def feature_diffLatLon(lon1,lat1,lon2,lat2):
 
 def feature_attrJson(item1, item2):
 	if(item1['attrsJSON'] == '' or item2['attrsJSON'] == ''):
-		return 0
+		return [0,0]
 
 	json1 = json.loads(item1['attrsJSON'])
 	json2 = json.loads(item2['attrsJSON'])
 	soma = 0.0
 	n = 0.0
-
+	i = 0.0
 	for key in json1.keys():
+		i = i + 1.0
 		if(json2.get(key, False) != False):
 			soma = soma + jf.jaro_winkler(json2[key],json1[key])
 			n = n + 1.0
 
 	if(n > 0):
-		return soma/n
+		return [soma/n, n/i]
 	else:
-		return 0
+		return [0,0]
 
 def mergeItems(item1, item2):
 	diff_price = feature_diffPrice(item1['price'], item2['price'])
 	diff_latlon = feature_diffLatLon(item1['lon'], item1['lat'], item2['lon'], item2['lat'])
-	simi_json = feature_attrJson(item1, item2)
+	simi_json,eq_keys_json = feature_attrJson(item1, item2)
 	
 	json = {
 				'x': 
@@ -244,7 +245,8 @@ def mergeItems(item1, item2):
 					int(item1['attrsJSON'] == ''),
 					int(item2['attrsJSON'] == ''),
 					diff_latlon,
-					simi_json
+					simi_json,
+					eq_keys_json
 				]
 	}
 
@@ -291,8 +293,11 @@ def initFeatures():
 	i = 0
 
 	for doc in cursor:
+		if(doc.get('isDuplicate', False) == False):
+			continue
+
 		json = mergeItems(doc['item1'], doc['item2'])
-		json['y'] = doc['isDuplicate']
+		json['y'] = int(doc['isDuplicate'])
 
 		bulk.append(json)
 		i = i + 1
@@ -316,7 +321,7 @@ def classify():
 	y = []
 	for doc in cursor:
 		X.append(doc['x'])
-		y.append(doc['y'])
+		y.append(int(doc['y']))
 
 	X = np.array(X)
 	y = np.array(y)
