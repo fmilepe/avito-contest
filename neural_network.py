@@ -26,6 +26,8 @@ PAIR_TEST_COLL = 'pair_test'
 PAIR_ITEM_COLL = 'pair_item'
 PAIR_ITEM_TEST_COLL = 'pair_item_test'
 
+categories = {}
+
 def openMongoConnection():
 	client = MongoClient('localhost', 27017)
 	return client
@@ -230,6 +232,7 @@ def mergeItems(item1, item2):
 	json = {
 				'x': 
 				[
+					int(item1['categoryID'] == item2['categoryID']),
 					int(item1['locationID'] == item2['locationID']),
 					int(item1['metroID'] 	== item2['metroID']),
 					int(item1['metroID'] == ''),
@@ -249,6 +252,20 @@ def mergeItems(item1, item2):
 					eq_keys_json
 				]
 	}
+
+	if(item1['categoryID'] != item2['categoryID']):
+		print('CATEGORIAS DIFERENTES:',item1['itemID'],item2['itemID'])
+	# no for seguinte, estou assumindo que os dois itens tem a mesma categoria sempre!
+	for cat in categories.keys():
+		if(int(item1['categoryID']) == cat):
+			json['x'].append(1)
+		else:
+			json['x'].append(0)
+	#	if(int(item2['categoryID']) == cat):
+	#		json['x'].append(1)
+	#	else:
+	#		json['x'].append(0)
+
 
 	return json
 
@@ -328,7 +345,7 @@ def classify():
 
 	X = normalize(X)
 
-	clf = MLPClassifier(hidden_layer_sizes=(150,20), activation='tanh', algorithm='adam', alpha=1e-5,
+	clf = MLPClassifier(hidden_layer_sizes=(100,50), activation='tanh', algorithm='adam', alpha=1e-5,
 						learning_rate='constant',tol=1e-8,learning_rate_init=0.0002,
 						early_stopping=True,validation_fraction=0.2)
 	
@@ -368,6 +385,13 @@ def classify():
 def main():
 	start_time = time.time()
 	args = {}
+
+	client = openMongoConnection()
+	db = client[DB_NAME]
+	cursor = db.category.find({}).sort("categoryID")
+
+	for c in cursor:
+		categories[int(c['categoryID'])] = int(c['parentCategoryID'])
 
 	for arg in sys.argv:
 		args[arg] = True
