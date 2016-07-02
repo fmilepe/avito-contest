@@ -12,6 +12,7 @@ from sklearn.cross_validation import KFold
 from sklearn.preprocessing import normalize
 import json
 import random
+from sklearn.neighbors import KNeighborsClassifier
 
 BULK_LIMIT = 1000
 DB_NAME = 'kaggle'
@@ -329,29 +330,58 @@ def initFeatures():
 
 	client.close()
 
-def classify():
+def carregarFeaturesKaggle(limit):
+	print("Carregando features do Kaggle")
+	client = openMongoConnection()
+	db = client[DB_NAME]
+	if limit == -1:
+		cursor = db[FEATURES_TEST_COLL].find({})
+	else:
+		cursor = db[FEATURES_TEST_COLL].find({}).limit(limit)
+	
+	X = []
+	for doc in cursor:
+		X.append(doc['x'])
+
+	X = np.array(X)
+	client.close()
+
+	return X
+
+def carregarFeaturesTreino(limit):
+	print("Carregando features de treino")
 	client = openMongoConnection()
 	db = client[DB_NAME]
 
-	cursor = db[FEATURES_COLL].find({})
+	if limit == -1:
+		cursor = db[FEATURES_COLL].find({})
+	else:
+		cursor = db[FEATURES_COLL].find({}).limit(limit)
 	X = []
 	y = []
 	for doc in cursor:
 		X.append(doc['x'])
 		y.append(int(doc['y']))
 
+	c = list(zip(X,y))
+	random.shuffle(c)
+	X,y = zip(*c)
 	X = np.array(X)
 	y = np.array(y)
+	client.close()
 
-	X = normalize(X)
+	return [X, y]
+
+def rede_neural(X, y):
+	print("Iniciando treinamento da Rede Neural")
+
+	X2 = normalize(X)
 
 	clf = MLPClassifier(hidden_layer_sizes=(100,50), activation='tanh', algorithm='adam', alpha=1e-5,
 						learning_rate='constant',tol=1e-8,learning_rate_init=0.0002,
 						early_stopping=True,validation_fraction=0.2)
-	
-	kf = KFold(len(y),n_folds=3)
 
-	print("Iniciando treinamento")
+	kf = KFold(len(y),n_folds=3)
 	i = 0
 	for train,test in kf:
 		start = time.time()
@@ -360,27 +390,47 @@ def classify():
 
 		# dividindo dataset em treino e test
 		#X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.4, random_state=1)
-		X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
+		X_train, X_test, y_train, y_test = X2[train], X2[test], y[train], y[test]
 		
 		# fit
 		clf.fit(X_train, y_train)
 		print("score:",clf.score(X_test, y_test),"(",(time.time()-start)/60.0,"minutos )")
+	return clf
 
-	X_Kaggle = []
-	cursor = db[FEATURES_TEST_COLL].find({})
-	for doc in cursor:
-		X_Kaggle.append(doc['x'])
+def KNN(X, y):
+	print("Iniciando treinamento do KNN")
+	clf = KNeighborsClassifier(n_jobs=6,leaf_size=15)
+	kf = KFold(len(y),n_folds=20)
+	clf.fit(X,y)
+	#i = 0
+	#for train,test in kf:
+	#	start = time.time()
+	#	i = i + 1
+	#	print("Treinamento",i)
+	#	X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
+		#clf.fit(X_train, y_train)
+	#	print("score:",clf.score(X_test, y_test),"(",(time.time()-start)/60.0,"minutos )")
 
+	return clf
+
+def generate_kaggle_submition(X_Kaggle, clf, output):
 	predict = clf.predict_proba(X_Kaggle)
-	
 	i = 0
-	f = open('output','w')
+	f = open(output,'w')
 	f.write("id,probability\n")
 	for p in predict:
 		f.write(str(i)+","+str(p[1])+"\n")
 		i = i + 1
+	f.close()
 
-	client.close()
+def classify():
+	X, y = carregarFeaturesTreino(-1)
+	#clf1 = rede_neural(X, y)
+	clf2 = KNN(X, y)
+
+	X_Kaggle = carregarFeaturesKaggle(-1)
+	#generate_kaggle_submition(X_Kaggle, clf1, 'neural_network.csv')
+	generate_kaggle_submition(X_Kaggle, clf2, 'knn.csv')
 
 def main():
 	start_time = time.time()
