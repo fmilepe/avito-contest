@@ -17,6 +17,7 @@ def main():
 	initDatabaseTest()
 	tempo(start, "initDatabaseTest")
 	
+	# MELHOR CRIAR OS INDICES DIRETO NO CMD DO DATABASE
 	#start = time.time()
 	#createIndexes()
 	#tempo(start, "createIndexes")
@@ -36,8 +37,15 @@ def main():
 	start = time.time()
 	initFeaturesGeneralTest()
 	tempo(start, "initFeaturesGeneralTest")	
-	"""
+	
+	start = time.time()
+	initFeaturesDiscretes()
+	tempo(start, "initFeaturesDiscretes")
 
+	start = time.time()
+	initFeaturesDiscretesTest()
+	tempo(start, "initFeaturesDiscretesTest")
+	"""
 	start = time.time()
 	classify(learn_xgb=True)
 	tempo(start, "classify")

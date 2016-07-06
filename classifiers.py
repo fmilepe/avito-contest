@@ -11,14 +11,14 @@ from sklearn.neighbors import KNeighborsClassifier
 from mongo_database import *
 import xgboost as xgb
 
-def carregarFeaturesKaggle(limit):
+def carregarFeaturesKaggle(limit, collection_name):
 	print("Carregando features do Kaggle")
 	client = openMongoConnection()
 	db = client[DB_NAME]
 	if limit == -1:
-		cursor = db[FEATURES_TEST_COLL].find({})
+		cursor = db[collection_name].find({})
 	else:
-		cursor = db[FEATURES_TEST_COLL].find({}).limit(limit)
+		cursor = db[collection_name].find({}).limit(limit)
 	
 	X = []
 	for doc in cursor:
@@ -29,15 +29,15 @@ def carregarFeaturesKaggle(limit):
 
 	return X
 
-def carregarFeaturesTreino(limit):
+def carregarFeaturesTreino(limit, collection_name):
 	print("Carregando features de treino")
 	client = openMongoConnection()
 	db = client[DB_NAME]
 
 	if limit == -1:
-		cursor = db[FEATURES_COLL].find({})
+		cursor = db[collection_name].find({})
 	else:
-		cursor = db[FEATURES_COLL].find({}).limit(limit)
+		cursor = db[collection_name].find({}).limit(limit)
 	X = []
 	y = []
 	for doc in cursor:
@@ -118,8 +118,8 @@ def generate_kaggle_submition(X_Kaggle, clf, output):
 	f.close()
 
 def classify(learn_rede_neural=False, learn_KNN=False, learn_xgb=False):
-	X, y = carregarFeaturesTreino(-1)
-	X_Kaggle = carregarFeaturesKaggle(-1)
+	X, y = carregarFeaturesTreino(-1, FEATURES_COLL)
+	X_Kaggle = carregarFeaturesKaggle(-1, FEATURES_TEST_COLL)
 
 	if(learn_rede_neural):
 		clf1 = rede_neural(X, y)
@@ -130,5 +130,8 @@ def classify(learn_rede_neural=False, learn_KNN=False, learn_xgb=False):
 		generate_kaggle_submition(X_Kaggle, clf2, 'knn.csv')
 
 	if(learn_xgb):
-		clf3 = XGBoost(X, y)
-		generate_kaggle_submition(X_Kaggle, clf3, 'xgboost.csv')
+		X_disc, y_disc = carregarFeaturesTreino(-1, FEATURES_XGB_COLL)
+		X_Kaggle_disc = carregarFeaturesKaggle(-1, FEATURES_XGB_TEST_COLL)
+		
+		clf3 = XGBoost(X_disc, y_disc)
+		generate_kaggle_submition(X_Kaggle_disc, clf3, 'xgboost.csv')
