@@ -2,6 +2,8 @@ import jellyfish as jf
 import json
 from mongo_database import *
 from util import *
+from sklearn.cluster import KMeans
+import time
 
 # Retorna a proporção entre os precos
 def feature_diffPrice(price1, price2):
@@ -291,3 +293,9 @@ def initFeaturesDiscretesTest():
 		features.insert(bulk)
 
 	client.close()
+
+def generateClusterFeature(X):
+	print("Iniciando treinamento do cluster")
+	clusterizador = KMeans(n_clusters=5, max_iter=300, tol=0.0001, precompute_distances=False, n_jobs=1)
+	clusterizador.fit(X)
+	return clusterizador

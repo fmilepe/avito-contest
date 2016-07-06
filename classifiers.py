@@ -10,6 +10,7 @@ import random
 from sklearn.neighbors import KNeighborsClassifier
 from mongo_database import *
 import xgboost as xgb
+from feature_creator import generateClusterFeature
 
 def carregarFeaturesKaggle(limit, collection_name):
 	print("Carregando features do Kaggle")
@@ -83,7 +84,7 @@ def XGBoost(X, y):
 	start_time = time.time()
 
 	X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.1, random_state=1)
-	clf = xgb.XGBClassifier(learning_rate=0.1, max_depth=5, seed=0, silent=True,
+	clf = xgb.XGBClassifier(learning_rate=0.15, n_estimators=150, nthread=6, max_depth=5, seed=0, silent=True,
 							subsample=0.8, colsample_bytree=0.8)
 	clf.fit(X, y)
 	score = clf.score(X_test, y_test)
@@ -118,8 +119,26 @@ def generate_kaggle_submition(X_Kaggle, clf, output):
 	f.close()
 
 def classify(learn_rede_neural=False, learn_KNN=False, learn_xgb=False):
-	X, y = carregarFeaturesTreino(-1, FEATURES_COLL)
-	X_Kaggle = carregarFeaturesKaggle(-1, FEATURES_TEST_COLL)
+	if(learn_rede_neural or learn_KNN):
+		X, y = carregarFeaturesTreino(-1, FEATURES_COLL)
+		X_Kaggle = carregarFeaturesKaggle(-1, FEATURES_TEST_COLL)
+
+	if(learn_xgb):
+		X_disc, y_disc = carregarFeaturesTreino(-1, FEATURES_XGB_COLL)
+		X_Kaggle_disc = carregarFeaturesKaggle(-1, FEATURES_XGB_TEST_COLL)
+		clusterClf = generateClusterFeature(X_disc)
+
+		cluster_x = clusterClf.predict(X_disc)
+		i = 0
+		for x_f in X_disc:
+			np.append(x_f, cluster_x[i])
+			i = i + 1
+
+		cluster_x = clusterClf.predict(X_Kaggle_disc)
+		i = 0
+		for x_f in X_Kaggle_disc:
+			np.append(x_f, cluster_x[i])
+			i = i + 1
 
 	if(learn_rede_neural):
 		clf1 = rede_neural(X, y)
@@ -130,8 +149,5 @@ def classify(learn_rede_neural=False, learn_KNN=False, learn_xgb=False):
 		generate_kaggle_submition(X_Kaggle, clf2, 'knn.csv')
 
 	if(learn_xgb):
-		X_disc, y_disc = carregarFeaturesTreino(-1, FEATURES_XGB_COLL)
-		X_Kaggle_disc = carregarFeaturesKaggle(-1, FEATURES_XGB_TEST_COLL)
-		
 		clf3 = XGBoost(X_disc, y_disc)
 		generate_kaggle_submition(X_Kaggle_disc, clf3, 'xgboost.csv')
