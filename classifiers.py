@@ -84,8 +84,8 @@ def XGBoost(X, y):
 	start_time = time.time()
 
 	X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.1, random_state=1)
-	clf = xgb.XGBClassifier(learning_rate=0.15, n_estimators=150, nthread=6, max_depth=5, seed=0, silent=True,
-							subsample=0.8, colsample_bytree=0.8)
+	clf = xgb.XGBClassifier(learning_rate=0.15, n_estimators=170, nthread=6, max_depth=8, seed=0, silent=True,
+							subsample=0.85, colsample_bytree=0.85)
 	clf.fit(X, y)
 	score = clf.score(X_test, y_test)
 	print("XGBoost score: ", score, "(", (time.time()-start_time)/60.0, "minutos )")
